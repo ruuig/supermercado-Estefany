@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supermercado</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Supermercado</h1>
+    <nav>
+      <button onclick="mostrarSeccion('productos')">Productos</button>
+      <button onclick="mostrarSeccion('responsables')">Responsables</button>
+      <button onclick="mostrarSeccion('nueva-venta')">Nueva Venta</button>
+      <button onclick="mostrarSeccion('ventas')">Historial de Ventas</button>
+    </nav>
+  </header>
+
+  <!-- ── PRODUCTOS ─────────────────────────────────────────── -->
+  <section id="productos" class="seccion">
+    <div class="seccion-header">
+      <h2>Inventario</h2>
+      <button class="btn-primario" onclick="abrirModalProducto()">+ Agregar producto</button>
+    </div>
+    <div id="lista-productos" class="grid"></div>
+  </section>
+
+  <!-- ── RESPONSABLES ──────────────────────────────────────── -->
+  <section id="responsables" class="seccion oculto">
+    <div class="seccion-header">
+      <h2>Responsables</h2>
+      <button class="btn-primario" onclick="abrirModalJefe()">+ Agregar responsable</button>
+    </div>
+    <table id="tabla-jefes">
+      <thead>
+        <tr>
+          <th>#</th><th>Número</th><th>Nombre</th><th>Teléfono</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-jefes"></tbody>
+    </table>
+  </section>
+
+  <!-- ── NUEVA VENTA ────────────────────────────────────────── -->
+  <section id="nueva-venta" class="seccion oculto">
+    <h2>Nueva Venta</h2>
+
+    <div class="formulario">
+      <label>NIT Cliente <small>(dejar vacío = CF)</small></label>
+      <input id="nit-cliente" placeholder="CF" />
+
+      <label>Buscar producto por código</label>
+      <div class="fila">
+        <input id="cod-producto" placeholder="P001" />
+        <input id="cant-producto" type="number" min="1" value="1" style="width:80px"/>
+        <button onclick="agregarItem()">Agregar</button>
+      </div>
+    </div>
+
+    <table id="tabla-carrito">
+      <thead>
+        <tr>
+          <th>Código</th><th>Nombre</th><th>Precio</th><th>Cant.</th><th>Subtotal</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-carrito"></tbody>
+    </table>
+
+    <div class="totales">
+      <span>Total: <strong id="total-venta">Q0.00</strong></span>
+      <label>Efectivo recibido:</label>
+      <input id="efectivo" type="number" min="0" step="0.01" placeholder="0.00" oninput="calcularCambio()"/>
+      <span>Cambio: <strong id="cambio-venta">Q0.00</strong></span>
+      <button id="btn-vender" onclick="registrarVenta()">Registrar Venta</button>
+    </div>
+
+    <div id="msg-venta"></div>
+  </section>
+
+  <!-- ── HISTORIAL ──────────────────────────────────────────── -->
+  <section id="ventas" class="seccion oculto">
+    <h2>Historial de Ventas</h2>
+    <table id="tabla-ventas">
+      <thead>
+        <tr>
+          <th>#</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Efectivo</th><th>Cambio</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-ventas"></tbody>
+    </table>
+  </section>
+
+  <!-- ── MODAL PRODUCTO (crear / editar) ───────────────────── -->
+  <div id="modal-producto" class="modal oculto">
+    <div class="modal-contenido">
+      <button class="cerrar" onclick="cerrarModalProducto()">✕</button>
+      <h3 id="titulo-modal-producto">Agregar Producto</h3>
+      <div class="formulario" style="max-width:100%">
+        <label>Código</label>
+        <input id="np-codigo" placeholder="P010" />
+
+        <label>Nombre</label>
+        <input id="np-nombre" placeholder="Nombre del producto" />
+
+        <label>Costo de adquisición (Q)</label>
+        <input id="np-costo" type="number" min="0" step="0.01" placeholder="0.00" />
+
+        <label>Precio de venta (Q)</label>
+        <input id="np-precio" type="number" min="0" step="0.01" placeholder="0.00" />
+
+        <label>Stock</label>
+        <input id="np-stock" type="number" min="0" value="0" />
+
+        <label>Responsable</label>
+        <select id="np-jefe"></select>
+
+        <div id="msg-producto" style="font-weight:600"></div>
+        <button class="btn-primario" onclick="guardarProducto()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL JEFE (crear / editar) ───────────────────────── -->
+  <div id="modal-jefe" class="modal oculto">
+    <div class="modal-contenido">
+      <button class="cerrar" onclick="cerrarModalJefe()">✕</button>
+      <h3 id="titulo-modal-jefe">Agregar Responsable</h3>
+      <div class="formulario" style="max-width:100%">
+        <label>Número de empleado</label>
+        <input id="nj-numero" placeholder="J004" />
+
+        <label>Nombre completo</label>
+        <input id="nj-nombre" placeholder="Nombre" />
+
+        <label>Teléfono <small>(opcional)</small></label>
+        <input id="nj-telefono" placeholder="5555-0000" />
+
+        <div id="msg-jefe" style="font-weight:600"></div>
+        <button class="btn-primario" onclick="guardarJefe()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL DETALLE VENTA ────────────────────────────────── -->
+  <div id="modal" class="modal oculto">
+    <div class="modal-contenido">
+      <button class="cerrar" onclick="cerrarModal()">✕</button>
+      <h3>Detalle de Venta</h3>
+      <div id="modal-cuerpo"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
